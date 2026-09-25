@@ -154,6 +154,16 @@ FairMean overall.
 See [`docs/VALIDATED_CLAIMS.md`](docs/VALIDATED_CLAIMS.md) and
 [`benchmarks/README.md`](benchmarks/README.md).
 
+### Gate 34 — post-release research candidate
+
+Swapping in label-free k-means patch features, with no change to the
+no-untrusted-label rule, raises the full CIFAR-10 student to **49.6% / 55.9% /
+61.4% / 66.4%** at 0.5% / 1% / 2% / 5% trusted labels. The student now beats
+its own trusted-only teacher at every budget, which removes the v1.0 5%
+crossover. Sentinel target and final-weight differences are zero in all 20
+runs. This is not yet the library default; see
+[`docs/GATE34_RESEARCH.md`](docs/GATE34_RESEARCH.md).
+
 ## Federated form
 
 For client `i`:

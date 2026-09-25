@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+### Research
+
+- Gate 34: label-free Coates & Ng k-means patch features plus a linear ridge
+  student. On full CIFAR-10 the student reaches 49.6% / 55.9% / 61.4% / 66.4%
+  at 0.5% / 1% / 2% / 5% trusted labels (v1.0: 38.6% / 44.1% / 47.6% / 51.5%).
+  It beats its own trusted-only teacher at every budget, and target and
+  final-weight sentinel differences stay zero. Harness in
+  `experiments/research/`, results in `benchmarks/results/gate34_*`, write-up
+  in `docs/GATE34_RESEARCH.md`. Library defaults are unchanged.
+
 ## 1.0.0 — 2026-09-25
 
 Models trained with valid inputs are bit-identical to 1.0.0rc1, so the bundled

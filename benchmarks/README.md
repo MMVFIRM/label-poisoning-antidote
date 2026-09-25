@@ -34,6 +34,15 @@ This is explicitly a **partial external-baseline qualification**.
 reference numbers for context only. They are not numerically comparable to the
 matched fixed-feature checkpoint.
 
+## Gate 34 (post-release research)
+
+`gate34_results.csv` and `gate34_summary.csv` come from
+`experiments/research/gate34_kmeans_harness.py`. The run uses the Gate-31
+protocol (50,000 train / 10,000 test, same trusted seeds) and evaluates a
+research candidate with label-free k-means patch features. It is not part of
+the v1.0 qualification record and is not covered by `MANIFEST.json`. See
+[`../docs/GATE34_RESEARCH.md`](../docs/GATE34_RESEARCH.md).
+
 ## Integrity
 
 The root `MANIFEST.json` records SHA-256 hashes for every file in the release archive.

@@ -39,6 +39,7 @@ This file records why the v1.0 release is smaller than the research tree.
 | 31 | Full 50k/10k centralized qualification passed; high-trust utility crossover documented. |
 | 32 | Full 50k/10k federated/non-IID qualification passed; final-student mutation invariance measured directly. |
 | 33 | External FairMean/FedAvg/q-FFL checkpoint confirmed robustness/utility tradeoff; full GPU matrix left optional. |
+| 34 | *Post-release research.* Label-free k-means patch features lifted the student by +11 to +15 pt, and it now beats its own teacher at every budget; self-training rejected. See [`GATE34_RESEARCH.md`](GATE34_RESEARCH.md). |
 
 ## Removed from the v1.0 core
 
