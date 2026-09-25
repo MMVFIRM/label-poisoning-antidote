@@ -1,0 +1,10 @@
+method,condition,avg_accuracy_pct,fairness_variance_metric,worst_client_accuracy_pct
+FedAvg,no_attack,71.54,40.85,54.57
+FedAvg,random_flip,60.59,177.7,37.62
+FedAvg,pairwise_flip,59.98,203.39,32.96
+q-FFL,no_attack,67.93,40.5,57.24
+q-FFL,random_flip,60.62,106.12,46.3
+q-FFL,pairwise_flip,62.66,131.22,38.42
+FairMean,no_attack,70.15,34.46,55.94
+FairMean,random_flip,61.54,85.33,52.01
+FairMean,pairwise_flip,61.37,99.34,50.97

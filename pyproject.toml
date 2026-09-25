@@ -1,0 +1,72 @@
+[build-system]
+requires = ["setuptools>=77", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "label-poisoning-antidote"
+dynamic = ["version"]
+description = "Label Poisoning Antidote (LPA): learning that structurally excludes an untrusted label field."
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Richard Aragon" }]
+requires-python = ">=3.10"
+dependencies = [
+  "numpy>=1.24,<3",
+  "scipy>=1.10,<2",
+]
+keywords = ["label poisoning", "robust learning", "federated learning", "kernel ridge", "data poisoning"]
+classifiers = [
+  "Development Status :: 5 - Production/Stable",
+  "Intended Audience :: Science/Research",
+  "Intended Audience :: Developers",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+  "Topic :: Security",
+  "Typing :: Typed",
+]
+
+[project.urls]
+Homepage = "https://github.com/MMVFIRM/label-poisoning-antidote"
+Documentation = "https://github.com/MMVFIRM/label-poisoning-antidote/tree/main/docs"
+Changelog = "https://github.com/MMVFIRM/label-poisoning-antidote/blob/main/CHANGELOG.md"
+Issues = "https://github.com/MMVFIRM/label-poisoning-antidote/issues"
+
+[project.optional-dependencies]
+test = ["pytest>=7.4"]
+dev = ["pytest>=7.4", "ruff>=0.6", "mypy>=1.10", "build>=1.2"]
+
+[project.scripts]
+lpa = "lpa.cli:main"
+
+[tool.setuptools.dynamic]
+version = { attr = "lpa._version.__version__" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+lpa = ["py.typed"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 110
+target-version = "py310"
+extend-exclude = ["experiments"]
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I", "B"]
+# Tests and examples use a compact one-line setup style.
+ignore = ["E702"]
+
+[tool.mypy]
+files = ["src/lpa"]
+ignore_missing_imports = true
