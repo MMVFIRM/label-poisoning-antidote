@@ -21,9 +21,9 @@ lpa federated-audit
 ```
 
 Architecture changes should be proposed separately from bug fixes so the
-validated behavior remains auditable. `LPAConfig.v1()` must stay bit-identical
-to LPA 1.0.0; `tests/test_v1_compat.py` checks this against model files written
-by 1.0.0.
+validated behavior remains auditable. `LPAConfig.v1()` must stay identical to
+LPA 1.0.0 (bit-identical on the same platform); `tests/test_v1_compat.py`
+checks this against model files written by 1.0.0.
 
 By contributing, you agree that your contributions are licensed under the
 project's [MIT License](LICENSE).

@@ -12,7 +12,8 @@ teacher at every budget, and untrusted-label invariance is unchanged.
 - `LabelPoisoningAntidote()` and `LPAConfig()` now use
   `architecture="kmeans"`. New default models differ from 1.0.0 models: they
   have different features, parameters, predictions, and model files. Use
-  `LPAConfig.v1()` for the 1.0.0 architecture, which is bit-identical.
+  `LPAConfig.v1()` for the 1.0.0 architecture, which reproduces 1.0.0
+  exactly (bit-identical on the same platform and BLAS).
 - `mutation_invariance_audit(..., student_config=None)` now audits the 2.0
   linear student. Pass a `StudentConfig` to audit the v1.0 landmark student.
 - `lpa audit` reports both architectures in one JSON object

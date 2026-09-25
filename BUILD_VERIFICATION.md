@@ -32,7 +32,9 @@ lpa federated-audit  max |W_federated - W_centralized| = 9.7e-17 (unweighted),
 ## Equivalence with 1.0.0
 
 - `LPAConfig.v1()` refits to the same student-weight hashes as 1.0.0 on the
-  view and image fixtures (`tests/test_v1_compat.py`).
+  view and image fixtures on the platform that wrote them. CI on other
+  platforms checks them to floating-point tolerance, plus identical predicted
+  labels (`tests/test_v1_compat.py`).
 - Model files written by 1.0.0 (format 2) load and give identical scores.
 - The Gate-34 run recomputed the v1.0 student for all 20 Gate-31 conditions; it
   matches `gate31_full_results.csv` exactly. The v1.0 teacher matches in 19/20;

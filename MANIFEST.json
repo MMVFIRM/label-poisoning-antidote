@@ -10,16 +10,16 @@
       "bytes": 227
     },
     "BUILD_VERIFICATION.md": {
-      "sha256": "b3a5c820ecec1442765db30bc396f872cf8cfcb2d868d5e98ead43cbe3f4b448",
-      "bytes": 2158
+      "sha256": "c92960dfa89201abc1ff6c28edc52bedda0e7e991e40f78c9ec6ab742d9e8a96",
+      "bytes": 2290
     },
     "CHANGELOG.md": {
-      "sha256": "8a6acb339c240243072ededbbdf33828e9c668f7d45e5a90111dc3f68ad91dd1",
-      "bytes": 4848
+      "sha256": "55ebd7368b0cfe0cf56315e4cc6c1977fe81e55c054042c20b1b09ecd8795a1f",
+      "bytes": 4905
     },
     "CONTRIBUTING.md": {
-      "sha256": "506318e1ea3deb0cb128370fb86713f7a86d81922341c6e1df375b04156d652a",
-      "bytes": 971
+      "sha256": "0f1de1aee7b661ca096fb46d2077abc0bad1438a2f97139abc2885987a2474bd",
+      "bytes": 1004
     },
     "LICENSE": {
       "sha256": "cfe4ee36da4cadc5e0cd0bfe7528abe57f5f803bcf1a21e5f24a09f8e2d00a30",
@@ -38,8 +38,8 @@
       "bytes": 408
     },
     "README.md": {
-      "sha256": "cdf12b32355a57401e62ae86d62b777527a570a62583ebc2d56857abda1b1ea2",
-      "bytes": 10503
+      "sha256": "401f1010ab863522a9ea2e151574364f1d4bb282c1bd45c26dfa74b642c0d380",
+      "bytes": 10539
     },
     "RELEASE_CHECKLIST.md": {
       "sha256": "9408790fbfb12b18617707e2a5f17139a76847a1767ea46826cf113130d661c8",
@@ -322,8 +322,8 @@
       "bytes": 3762
     },
     "tests/test_v1_compat.py": {
-      "sha256": "bd3357dc4837dc0ec6eed73d385044b9f4e04d053b8d545a91a65d7bd79b72b3",
-      "bytes": 1835
+      "sha256": "d0ecbff13d3b343942e40f41b0629e755b8db55cdd3d9d71ed0c7cb854f4d90e",
+      "bytes": 2426
     },
     "tests/test_validation.py": {
       "sha256": "b8f35417314fec6c5c4d71ea5888b3a0310d2307b0f522db94717c07f4bf0c11",

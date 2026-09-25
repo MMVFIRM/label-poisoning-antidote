@@ -40,8 +40,8 @@ points more accurate** than v1.0 on full CIFAR-10 at every tested trusted
 budget, and it now beats its own trusted-only teacher. The invariance
 property and exact federated aggregation are unchanged.
 
-The frozen v1.0 architecture is still available as `LPAConfig.v1()` and is
-bit-identical to 1.0.0. Model files saved by 1.0.0 load and predict unchanged.
+The frozen v1.0 architecture is still available as `LPAConfig.v1()` and
+reproduces 1.0.0 exactly (bit-identical on the same platform). Model files saved by 1.0.0 load and predict unchanged.
 See [`CHANGELOG.md`](CHANGELOG.md) for the breaking changes.
 
 Independent reproduction of the full CIFAR-10 results by a second party has
