@@ -1,5 +1,8 @@
 # Validated claims and claim boundaries
 
+Claims 1-5 were established for the v1.0 architecture (`LPAConfig.v1()`).
+Claim 6 covers the LPA 2.0 default architecture (Gate 34).
+
 ## Claim 1 — direct untrusted-label invariance
 
 The core API has no untrusted-label training argument. Target construction uses
@@ -82,9 +85,36 @@ flat.
 
 This supports a tradeoff claim, not an overall superiority claim.
 
+## Claim 6 — LPA 2.0 default: higher utility, same invariance
+
+Gate 34, full CIFAR-10 (50,000 train / 10,000 test), Gate-31 trusted seeds,
+five seeds per budget:
+
+| Trusted fraction | v1.0 student | 2.0 teacher | 2.0 student | Gain vs v1.0 | Gain vs 2.0 teacher |
+|---:|---:|---:|---:|---:|---:|
+| 0.5% | 38.57% | 46.51% | 49.63% | +11.06 pt | +3.12 pt |
+| 1% | 44.12% | 52.68% | 55.90% | +11.78 pt | +3.22 pt |
+| 2% | 47.61% | 58.43% | 61.35% | +13.73 pt | +2.92 pt |
+| 5% | 51.48% | 65.36% | 66.41% | +14.93 pt | +1.05 pt |
+
+- Every gain holds in 5/5 seeds at every budget (paired t-test p < 0.01 against
+  the 2.0 teacher, p < 1e-4 against the v1.0 student).
+- `sentinel_target_max_diff = 0` and `sentinel_student_weight_max_diff = 0` in
+  all 20 runs.
+- The 5% utility crossover of Claim 2 does not occur: the 2.0 student beats a
+  trusted-only linear ridge on the same features by 8.0 points at 5%.
+- Exact federated aggregation (Claim 3) holds with trusted-row weights: a
+  10-client Dirichlet(0.1) partition matched centralized training to `2.6e-11`.
+- Hyperparameters were selected on a 5,000-image dev split held out of the
+  training set. The test set was evaluated once, for the locked configuration.
+
+Not yet repeated for 2.0: the Gate-32 partial-participation study, the
+Gate-31 trusted-label contamination stress test, and the Gate-33 external
+baselines.
+
 ## Nonclaims
 
-LPA v1.0 does not establish:
+LPA does not establish:
 
 - universal immunity to all forms of poisoning;
 - state-of-the-art accuracy on CIFAR-10;

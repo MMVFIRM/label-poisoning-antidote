@@ -17,3 +17,5 @@ dist/
 .DS_Store
 .mypy_cache/
 .ruff_cache/
+!tests/fixtures/**/*.npz
+!tests/fixtures/*.npz

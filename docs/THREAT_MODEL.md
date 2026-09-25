@@ -10,8 +10,9 @@ The validated claim applies when:
 4. Input features/examples themselves are unchanged.
 5. Trusted set membership and trusted labels are not controlled by the attacker.
 6. The supplied LPA training path is used without adding a side channel from
-   untrusted labels into feature extraction, target construction, landmark
-   selection, hyperparameter selection, stopping criteria, or model selection.
+   untrusted labels into feature extraction (including the 2.0 k-means
+   dictionary), target construction, landmark selection, trusted-row weighting,
+   hyperparameter selection, stopping criteria, or model selection.
 
 Under those conditions the untrusted label field is absent from the objective,
 so arbitrary changes to that field produce no change in the LPA targets or
@@ -20,7 +21,7 @@ the validated implementation.
 
 ## Explicitly out of scope
 
-LPA v1.0 does not claim protection from:
+LPA (both architectures) does not claim protection from:
 
 - corruption of trusted labels;
 - manipulation of trusted-set membership;
@@ -32,6 +33,9 @@ LPA v1.0 does not claim protection from:
 - privacy inference from client sufficient statistics;
 - compromised random-number generation;
 - poisoned external/pretrained feature extractors;
+- poisoned training images steering the label-free feature statistics (the v1.0
+  color statistics and landmarks, or the 2.0 k-means dictionary, whitening, and
+  standardization), which are learned from all training inputs;
 - a malicious teacher implementation;
 - attacks that alter hyperparameters or deployment policy.
 
@@ -44,8 +48,10 @@ robustness guarantee.
 
 ## Federated assumption
 
-The qualified federated architecture uses a **global trusted root** and shared
-landmark basis. Clients do not independently construct semantic teachers.
+The qualified federated architecture uses a **global trusted root** and a shared
+feature basis (landmarks for v1.0; the k-means dictionary and standardization
+for 2.0). Clients do not independently construct semantic teachers or feature
+dictionaries.
 
 A fully decentralized system in which each client must build its own teacher is
 a different architecture and is not covered by the Gate-32 evidence.

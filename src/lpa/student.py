@@ -6,8 +6,12 @@ import numpy as np
 from scipy.linalg import cho_factor, cho_solve
 
 from ._checks import as_finite_2d
-from .config import StudentConfig
+from .config import LinearStudentConfig, StudentConfig
 from .kernels import rbf
+
+
+def _weight_digest(weights: np.ndarray) -> str:
+    return hashlib.sha256(np.ascontiguousarray(weights).tobytes()).hexdigest()
 
 
 class LandmarkRidgeStudent:
@@ -98,7 +102,7 @@ class LandmarkRidgeStudent:
     def weight_hash(self) -> str:
         if self.weights_ is None:
             raise RuntimeError("Student is not fitted.")
-        return hashlib.sha256(np.ascontiguousarray(self.weights_).view(np.uint8)).hexdigest()
+        return _weight_digest(self.weights_)
 
     def state_dict(self) -> dict[str, np.ndarray]:
         if not self.fitted or self.landmark_indices_ is None:
@@ -112,4 +116,82 @@ class LandmarkRidgeStudent:
     def load_state_dict(self, state: dict[str, np.ndarray]) -> None:
         self.landmark_indices_ = np.asarray(state["student_landmark_indices"], dtype=np.int64)
         self.landmarks_ = np.asarray(state["student_landmarks"], dtype=np.float64)
+        self.weights_ = np.asarray(state["student_weights"], dtype=np.float64)
+
+
+def trusted_row_weights(n_examples: int, trusted_indices: np.ndarray, trusted_weight: float) -> np.ndarray:
+    """Per-row ridge weights: `trusted_weight` on trusted rows, 1 elsewhere. Label-free."""
+    w = np.ones(int(n_examples), dtype=np.float64)
+    w[np.asarray(trusted_indices, dtype=np.int64)] = float(trusted_weight)
+    return w
+
+
+class LinearRidgeStudent:
+    """Gate-34 student: weighted linear ridge directly on the joint features.
+
+    Solves  min_W  sum_i w_i ||z_i W - q_i||^2 + ridge ||W||^2,
+    with w_i = trusted_weight on trusted rows and 1 elsewhere. The feature map is
+    the identity, so client sufficient statistics are sqrt(w)-scaled rows.
+    """
+
+    def __init__(self, n_classes: int, config: LinearStudentConfig | None = None) -> None:
+        self.n_classes = int(n_classes)
+        self.config = config or LinearStudentConfig()
+        self.weights_: np.ndarray | None = None
+
+    @property
+    def fitted(self) -> bool:
+        return self.weights_ is not None
+
+    def fit(
+        self,
+        joint: np.ndarray,
+        targets: np.ndarray,
+        trusted_indices: np.ndarray | None = None,
+    ) -> "LinearRidgeStudent":
+        z = as_finite_2d(joint, "joint")
+        q = as_finite_2d(targets, "targets")
+        if len(z) != len(q):
+            raise ValueError("joint and targets must have equal length.")
+        if q.shape[1] != self.n_classes:
+            raise ValueError("targets have the wrong number of classes.")
+        d = z.shape[1]
+        normal = self.config.ridge * np.eye(d, dtype=np.float64)
+        rhs = np.zeros((d, self.n_classes), dtype=np.float64)
+        chunk = self.config.chunk_size
+        for start in range(0, len(z), chunk):
+            zc = z[start : start + chunk]
+            normal += zc.T @ zc
+            rhs += zc.T @ q[start : start + chunk]
+        if trusted_indices is not None and self.config.trusted_weight != 1.0:
+            idx = np.asarray(trusted_indices, dtype=np.int64)
+            extra = self.config.trusted_weight - 1.0
+            normal += extra * (z[idx].T @ z[idx])
+            rhs += extra * (z[idx].T @ q[idx])
+        cf = cho_factor(normal, check_finite=False)
+        self.weights_ = cho_solve(cf, rhs, check_finite=False)
+        return self
+
+    def predict_scores(self, joint: np.ndarray, chunk_size: int | None = None) -> np.ndarray:
+        if self.weights_ is None:
+            raise RuntimeError("Student is not fitted.")
+        z = as_finite_2d(joint, "joint")
+        if z.shape[1] != self.weights_.shape[0]:
+            raise ValueError(f"Student expects {self.weights_.shape[0]} joint features; got {z.shape[1]}.")
+        return z @ self.weights_
+
+    def predict(self, joint: np.ndarray, chunk_size: int | None = None) -> np.ndarray:
+        return np.argmax(self.predict_scores(joint), axis=1)
+
+    def weight_hash(self) -> str:
+        if self.weights_ is None:
+            raise RuntimeError("Student is not fitted.")
+        return _weight_digest(self.weights_)
+
+    def state_dict(self) -> dict[str, np.ndarray]:
+        if self.weights_ is None:
+            raise RuntimeError("Student is not fitted.")
+        return {"student_weights": np.asarray(self.weights_, dtype=np.float64)}
+
+    def load_state_dict(self, state: dict[str, np.ndarray]) -> None:
         self.weights_ = np.asarray(state["student_weights"], dtype=np.float64)

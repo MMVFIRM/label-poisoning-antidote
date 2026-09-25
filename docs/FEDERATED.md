@@ -2,15 +2,24 @@
 
 ## Exact sufficient-statistic form
 
-Once the trusted teacher and shared landmark basis are fixed, each client `i`
+Once the trusted teacher and the shared feature basis are fixed, each client `i`
 computes:
 
 ```text
 Phi_i  = LPA student features for its local x values
 Q_i    = trusted-teacher targets for those examples
-A_i    = Phi_i^T Phi_i
-B_i    = Phi_i^T Q_i
+D_i    = diag(row weights): 10 on trusted rows, 1 elsewhere (2.0 default);
+         the identity for the v1.0 architecture
+A_i    = Phi_i^T D_i Phi_i
+B_i    = Phi_i^T D_i Q_i
 ```
+
+The shared basis is the 256 landmarks and color statistics for v1.0. For the
+2.0 default it is the k-means patch dictionary, whitening, feature
+standardization, and color statistics. All of these are label-free, but they
+are computed from images, so they must be fitted once and distributed to every
+client. `client_sufficient_statistics(phi, targets, weights)` computes the
+weighted statistics; `trusted_row_weights()` builds the weights.
 
 The server computes:
 
@@ -36,26 +45,24 @@ Delta W     = 0.
 ```
 
 Gate 32 measured zero target and final-weight change under the attacked client
-label mutation.
+label mutation. The row weights depend only on trusted-set membership, so
+`Delta D_i = 0` as well. Gate 34 measured zero final-weight change for the 2.0
+student and a `2.6e-11` federated/centralized difference with a 10-client
+Dirichlet(0.1) partition.
 
 ## Communication
 
-For the validated 880-D student and 10 classes, a client needs to communicate
-one symmetric `A_i` and one `B_i`.
+With 10 classes, a client communicates one symmetric `A_i` and one `B_i`.
 
-Unique values:
+| Student | `A_i` unique values | `B_i` values | float32 | float64 |
+|---|---:|---:|---:|---:|
+| v1.0, 880-D | 387,640 | 8,800 | 1.51 MiB | 3.02 MiB |
+| 2.0, 6400-D | 20,483,200 | 64,000 | 78.4 MiB | 156.8 MiB |
 
-```text
-A_i: 880*881/2 = 387,640
-B_i: 880*10    =   8,800
-```
-
-Approximate payload before protocol/compression overhead:
-
-```text
-float32: 1.51 MiB/client
-float64: 3.02 MiB/client
-```
+These are payloads per client before protocol or compression overhead. The
+2.0 payload is about 50x larger. That is usually acceptable for a few
+cross-silo clients, but a deployment with many clients or constrained links
+should budget for it, or use the v1.0 architecture.
 
 ## Privacy
 

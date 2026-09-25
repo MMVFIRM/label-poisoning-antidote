@@ -1,35 +1,51 @@
-# LPA v1.0.0 release notes
+# LPA v2.0.0 release notes
 
-LPA v1.0.0 is the first public release of the Label Poisoning Antidote
-architecture, released under the MIT License.
+LPA 2.0.0 replaces the default architecture with the Gate-34 design and keeps
+the v1.0 architecture available unchanged.
 
-The architecture is the one frozen in 1.0.0rc1 after 33 research and
-qualification gates, and produces bit-identical models. The core is
-intentionally smaller than the research tree. Proprietary VIVERE and MACSL
-components were removed; geometry-based poison detectors, graph diffusion,
-mandatory conformal projection, confidence filtering, calibration rewrites,
-and smarter landmark selection were all rejected from the default path after
-failing to provide reliable utility gains.
+## What changed
 
-The release keeps the pieces that survived repeated stress testing:
-trusted-only multiview teaching, direct soft pseudo-targets, x-only random RBF
-landmarks, ridge distillation, and exact sufficient-statistic federation.
+The v1.0 student was limited by its HOG + color representation: even with all
+labels it reached only 58% on CIFAR-10. It was also less accurate than its own
+trusted-only kernel teacher, so distilling onto the untrusted pool cost
+accuracy. LPA 2.0 adds label-free Coates & Ng k-means patch features, learned
+from training images only, and uses them in both the trusted-only teacher and a
+linear ridge student.
 
-## Since 1.0.0rc1
+| Trusted fraction | 1.0.0 student | **2.0.0 student** |
+|---:|---:|---:|
+| 0.5% | 38.57% | **49.63%** |
+| 1% | 44.12% | **55.90%** |
+| 2% | 47.61% | **61.35%** |
+| 5% | 51.48% | **66.41%** |
 
-- MIT license.
-- Every array in a saved model is integrity-checked on load, with an optional
-  out-of-band fingerprint for tamper evidence.
-- Invalid inputs (non-integer labels, NaN/inf features, wrong feature widths,
-  malformed federated statistics) now fail loudly instead of silently.
-- Cross-platform CI, linting, type checking, and wheel verification.
+Full CIFAR-10, five seeds per budget. The 2.0 student beats its own teacher at
+every budget, which removes the v1.0 high-trust crossover. Replacing every
+untrusted label with a sentinel changed neither the targets nor the final
+weights in any run.
 
-See [`CHANGELOG.md`](CHANGELOG.md) for details.
+## What did not change
+
+- The training API still has no untrusted-label argument.
+- Exact federated aggregation still holds; trusted rows now carry a fixed
+  weight of 10.
+- `LPAConfig.v1()` is bit-identical to 1.0.0, and 1.0.0 model files load and
+  predict unchanged.
+
+## Costs
+
+The 2.0 default needs about 7 minutes of feature extraction for 60,000 CIFAR
+images on 4 CPU cores and about 2.6 GB for the 50,000-image feature matrix.
+Its federated statistics are about 78 MiB per client (float32), compared with
+1.5 MiB for v1.0. Use `LPAConfig.v1()` where those costs matter.
+
+See [`CHANGELOG.md`](CHANGELOG.md) for the full list of changes and
+[`docs/GATE34_RESEARCH.md`](docs/GATE34_RESEARCH.md) for the evidence.
 
 ## Claims
 
 Full-data qualification evidence is bundled in `benchmarks/results/`. These
-results have not yet been independently reproduced.
+results have not yet been independently reproduced by a second party.
 
 LPA is intentionally conservative about claims. It guarantees direct non-use
 of an explicitly untrusted label field in the supplied implementation; it does
