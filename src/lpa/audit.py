@@ -6,8 +6,8 @@ from dataclasses import asdict, dataclass
 import numpy as np
 
 from ._checks import as_finite_2d, as_int_1d
-from .config import StudentConfig
-from .student import LandmarkRidgeStudent
+from .config import LinearStudentConfig, StudentConfig
+from .student import LandmarkRidgeStudent, LinearRidgeStudent
 from .teacher import onehot
 
 
@@ -31,7 +31,7 @@ class MutationAuditReport:
 
 
 def _hash_array(a: np.ndarray) -> str:
-    return hashlib.sha256(np.ascontiguousarray(a).view(np.uint8)).hexdigest()
+    return hashlib.sha256(np.ascontiguousarray(a).tobytes()).hexdigest()
 
 
 def validate_trusted_pairs(
@@ -77,12 +77,14 @@ def mutation_invariance_audit(
     observed_labels_a: np.ndarray,
     observed_labels_b: np.ndarray,
     n_classes: int,
-    student_config: StudentConfig | None = None,
+    student_config: StudentConfig | LinearStudentConfig | None = None,
 ) -> MutationAuditReport:
     """Verify that arbitrary changes outside the trusted set cannot alter the model.
 
     The two observed label arrays may contain arbitrary Python objects on untrusted
-    indices. Only the trusted slices are converted to integers.
+    indices. Only the trusted slices are converted to integers. A
+    `LinearStudentConfig` (the default) audits the 2.0 linear student; a
+    `StudentConfig` audits the v1.0 landmark student.
     """
     idx = as_int_1d(trusted_indices, "trusted_indices")
     a = np.asarray(observed_labels_a, dtype=object)
@@ -96,13 +98,19 @@ def mutation_invariance_audit(
     qa = build_targets(teacher_probabilities, idx, ya, n_classes)
     qb = build_targets(teacher_probabilities, idx, yb, n_classes)
 
-    config = student_config or StudentConfig()
-    sa = LandmarkRidgeStudent(n_classes, config).fit(joint_features, qa)
-    sb = LandmarkRidgeStudent(n_classes, config).fit(
-        joint_features,
-        qb,
-        landmark_indices=sa.landmark_indices_,
-    )
+    config = student_config or LinearStudentConfig()
+    sa: LandmarkRidgeStudent | LinearRidgeStudent
+    sb: LandmarkRidgeStudent | LinearRidgeStudent
+    if isinstance(config, StudentConfig):
+        sa = LandmarkRidgeStudent(n_classes, config).fit(joint_features, qa)
+        sb = LandmarkRidgeStudent(n_classes, config).fit(
+            joint_features,
+            qb,
+            landmark_indices=sa.landmark_indices_,
+        )
+    else:
+        sa = LinearRidgeStudent(n_classes, config).fit(joint_features, qa, trusted_indices=idx)
+        sb = LinearRidgeStudent(n_classes, config).fit(joint_features, qb, trusted_indices=idx)
     assert sa.weights_ is not None and sb.weights_ is not None
     return MutationAuditReport(
         target_max_diff=float(np.max(np.abs(qa - qb))),

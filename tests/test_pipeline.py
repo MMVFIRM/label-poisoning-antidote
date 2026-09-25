@@ -18,7 +18,7 @@ def test_pipeline_fit_predict_save_load(tmp_path: Path):
     b/=np.maximum(np.linalg.norm(b,axis=1,keepdims=True),1e-12)
     z=np.concatenate([a,b],axis=1)/np.sqrt(2.)
     trusted=np.concatenate([np.flatnonzero(y==c)[:7] for c in range(classes)])
-    cfg=LPAConfig(
+    cfg=LPAConfig.v1(
         n_classes=classes,
         teacher=TeacherConfig(gamma_view_a=1.,gamma_view_b=1.),
         student=StudentConfig(landmark_count=20,landmark_seed=9),

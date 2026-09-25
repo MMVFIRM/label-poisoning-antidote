@@ -1,0 +1,39 @@
+{
+  "format_version": 2,
+  "package_version": "1.0.0",
+  "config": {
+    "n_classes": 3,
+    "feature": {
+      "color_floor": 0.01,
+      "normalization_eps": 1e-12
+    },
+    "teacher": {
+      "gamma_view_a": 1.0,
+      "gamma_view_b": 1.0,
+      "view_a_weight": 0.75,
+      "ridge": 0.1,
+      "temperature": 0.1
+    },
+    "student": {
+      "landmark_count": 20,
+      "landmark_seed": 9,
+      "landmark_gamma": 0.5,
+      "ridge": 1.0,
+      "chunk_size": 2000
+    }
+  },
+  "target_hash": "3df9cde4d11eadd4ba49620c6782e957084f7e7713929ff2bcc86a783acda5e6",
+  "student_weight_hash": "a60a94887604fa00685f2143cdc42648b1619ff5f6354f4712a7374cf0d56b14",
+  "array_sha256": {
+    "student_landmark_indices": "e7720d010b5bcafd41d9600adf197165e2cd4bc3383b3d5f861dff6b3beb17bc",
+    "student_landmarks": "04d3dcba17131abc0f78f4d92cb1723c36f6fce418eac9838a9a0904ec56d905",
+    "student_weights": "1119f0b84586aa8ac92ecab238376bdda00b41ac3bd152006713bc9ead74d263",
+    "teacher_alpha_a": "ca09b59f279ad40922c5909fa93c9f15c2e2f3c16932bc2353f4245bc7ab18b7",
+    "teacher_alpha_b": "97f1e8b483faa400d9d9217d35d994fec0d2280a95be1ddae79ba6003c942307",
+    "teacher_view_a_anchor": "90fda00ce5e4e99530cbf8b17380fbb1662efbf89fa810de021cf1a68946ea46",
+    "teacher_view_b_anchor": "7ec7bb5bfd08b5087fb3268b458f54844f7daeed56e23488e704b162b4a84236",
+    "trusted_indices": "6e2e88f9b3f75bf1b40f42cbe715daf5a46ec2c04e2cbde88619d2e36872e9d3",
+    "trusted_labels": "de18c75bb5866d2a407f61784f18ee138157931025d8aeea95db94a1b339d44e"
+  },
+  "validated_threat_model": "untrusted-label-only"
+}

@@ -25,9 +25,27 @@
       responsibility in `docs/DEPLOYMENT.md`.
 - [x] Confirm models are bit-identical to 1.0.0rc1 for valid inputs.
 
-## Open after 1.0.0
+## Completed for 2.0.0
 
-- [ ] Independent reproduction by a second environment/person.
+- [x] Gate 34 full CIFAR-10 centralized qualification: 20 runs, dev-split model
+      selection, a single test-set evaluation.
+- [x] Target and final-student mutation invariance at full scale for 2.0.
+- [x] Weighted federated/centralized equivalence at full scale.
+- [x] Library reproduces the Gate-34 harness through its public API.
+- [x] `LPAConfig.v1()` bit-identical to 1.0.0; 1.0.0 model files load unchanged.
+- [x] mypy clean under current NumPy stubs.
+
+## Open after 2.0.0
+
+- [ ] Federated partial-participation study (Gate-32 style) for the 2.0 default.
+- [ ] Trusted-label contamination stress test for the 2.0 default.
+- [ ] External baselines (Gate-33 style) for the 2.0 default.
+- [ ] Measure fitting the k-means dictionary on public or trusted-only images
+      for federated deployments that cannot pool images.
+
+- [ ] Independent reproduction by a second person. (Gate 31 was reproduced to
+      four decimals in a second environment on separately obtained CIFAR-10
+      data during Gate 34.)
 - [ ] Complete or explicitly waive the paper-faithful external GPU FairMean run
       (`experiments/external/run_official_fairmean_full_optional.sh`). Needs a
       GPU environment; the one-seed sanity script is sufficient to use LPA.

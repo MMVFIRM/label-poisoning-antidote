@@ -1,0 +1,41 @@
+{
+  "format_version": 2,
+  "package_version": "1.0.0",
+  "config": {
+    "n_classes": 3,
+    "feature": {
+      "color_floor": 0.01,
+      "normalization_eps": 1e-12
+    },
+    "teacher": {
+      "gamma_view_a": 4.0,
+      "gamma_view_b": 0.25,
+      "view_a_weight": 0.75,
+      "ridge": 0.1,
+      "temperature": 0.1
+    },
+    "student": {
+      "landmark_count": 16,
+      "landmark_seed": 29002,
+      "landmark_gamma": 0.5,
+      "ridge": 1.0,
+      "chunk_size": 2000
+    }
+  },
+  "target_hash": "637fab6d47a1af85eb53cde1d2709cedf0ecaf1d2308275b458fdedfb3af14a7",
+  "student_weight_hash": "f80fd07872281df05cf9d96146844d89a6acd95f6210cb846f84b5b200b551f5",
+  "array_sha256": {
+    "feature_color_mean": "fb64076e9d8fbd0b6c13e62089323c065f2ca7390b55b8b7ff40b66e0ccb3d20",
+    "feature_color_scale": "ed9de79547c4574b86eef6afba6845a6a468dbd12db00b7ef4c16d6a6432a635",
+    "student_landmark_indices": "86696a5396b16ba2bd8e828da002ed96b5e78b31bc99fdea57b4dcfc94728b5f",
+    "student_landmarks": "bd6d2a763dc7c829e15894678e6a9292ca94f7ba392f1f1d757a3fc39291b18d",
+    "student_weights": "f7a3a8c203cc47564ce889b9aee3fcdacb1bcf336dd1446941f191800d5211c7",
+    "teacher_alpha_a": "53b9b8dc7b4c10ac6334e4ab51519183f2c1a7bab747b0ed482a283d5a27657d",
+    "teacher_alpha_b": "070338135a3adefcd7db590fdbbc6170bb140f8b7d15bcab8a883ce79ebc5168",
+    "teacher_view_a_anchor": "9feee0574a889e6a7140d4ea4ccd67d2e38fb8ecedfb7cead3abb109cee03a3e",
+    "teacher_view_b_anchor": "8f61dd8597a71c490887110cfbd178ec6d9175f2c2014f8dd1f429cc26ff9300",
+    "trusted_indices": "09ecab618e2d42deed78905437118dce94001adebd22280c273851316287c9e7",
+    "trusted_labels": "30eba03c829a86a0bf116bcc395f4cd0f7178bec0f85f5eb6bfb8f12add76c68"
+  },
+  "validated_threat_model": "untrusted-label-only"
+}

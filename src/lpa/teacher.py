@@ -4,7 +4,7 @@ import numpy as np
 from scipy.linalg import cho_factor, cho_solve
 
 from ._checks import as_finite_2d, as_int_1d
-from .config import TeacherConfig
+from .config import KMeansTeacherConfig, TeacherConfig
 from .kernels import rbf
 
 
@@ -137,3 +137,97 @@ class TrustedKernelTeacher:
         self.view_b_anchor_ = np.asarray(state["teacher_view_b_anchor"], dtype=np.float64)
         self.alpha_a_ = np.asarray(state["teacher_alpha_a"], dtype=np.float64)
         self.alpha_b_ = np.asarray(state["teacher_alpha_b"], dtype=np.float64)
+
+
+class BlendedKernelTeacher:
+    """Gate-34 trusted-only teacher.
+
+    Raw score = w * RBF kernel ridge on the joint (k-means) features
+              + (1 - w) * the v1.0 two-view teacher raw score,
+    converted to probabilities by a temperature softmax. Fitted only from
+    trusted examples.
+    """
+
+    def __init__(
+        self,
+        n_classes: int,
+        config: KMeansTeacherConfig | None = None,
+        two_view_config: TeacherConfig | None = None,
+    ) -> None:
+        self.n_classes = int(n_classes)
+        self.config = config or KMeansTeacherConfig()
+        self.two_view = TrustedKernelTeacher(n_classes, two_view_config)
+        self.joint_anchor_: np.ndarray | None = None
+        self.alpha_joint_: np.ndarray | None = None
+
+    @property
+    def fitted(self) -> bool:
+        return self.two_view.fitted and self.joint_anchor_ is not None and self.alpha_joint_ is not None
+
+    def fit(
+        self,
+        trusted_view_a: np.ndarray,
+        trusted_view_b: np.ndarray,
+        trusted_joint: np.ndarray,
+        trusted_labels: np.ndarray,
+    ) -> "BlendedKernelTeacher":
+        z = as_finite_2d(trusted_joint, "trusted_joint")
+        self.two_view.fit(trusted_view_a, trusted_view_b, trusted_labels)
+        if len(z) != len(trusted_labels):
+            raise ValueError("Trusted joint features and trusted labels must have equal length.")
+        target = onehot(trusted_labels, self.n_classes)
+        k = rbf(z, z, self.config.gamma)
+        cf = cho_factor(k + self.config.ridge * np.eye(len(z)), check_finite=False)
+        self.joint_anchor_ = z.copy()
+        self.alpha_joint_ = cho_solve(cf, target, check_finite=False)
+        return self
+
+    def predict_scores(
+        self,
+        view_a: np.ndarray,
+        view_b: np.ndarray,
+        joint: np.ndarray,
+        chunk_size: int = 2000,
+    ) -> np.ndarray:
+        if not self.fitted:
+            raise RuntimeError("Teacher is not fitted.")
+        assert self.joint_anchor_ is not None
+        z = as_finite_2d(joint, "joint")
+        if z.shape[1] != self.joint_anchor_.shape[1]:
+            raise ValueError(
+                f"Teacher expects {self.joint_anchor_.shape[1]} joint features; got {z.shape[1]}."
+            )
+        base = self.two_view.predict_scores(view_a, view_b, chunk_size=chunk_size)
+        if len(base) != len(z):
+            raise ValueError("view_a, view_b, and joint must have equal length.")
+        w = self.config.weight
+        outputs: list[np.ndarray] = []
+        for start in range(0, len(z), chunk_size):
+            k = rbf(z[start : start + chunk_size], self.joint_anchor_, self.config.gamma)
+            outputs.append(w * (k @ self.alpha_joint_) + (1.0 - w) * base[start : start + chunk_size])
+        return np.concatenate(outputs, axis=0)
+
+    def predict_proba(
+        self,
+        view_a: np.ndarray,
+        view_b: np.ndarray,
+        joint: np.ndarray,
+        chunk_size: int = 2000,
+    ) -> np.ndarray:
+        return softmax_temperature(
+            self.predict_scores(view_a, view_b, joint, chunk_size=chunk_size),
+            self.config.temperature,
+        )
+
+    def state_dict(self) -> dict[str, np.ndarray]:
+        if not self.fitted:
+            raise RuntimeError("Teacher is not fitted.")
+        state = self.two_view.state_dict()
+        state["teacher_joint_anchor"] = np.asarray(self.joint_anchor_)
+        state["teacher_alpha_joint"] = np.asarray(self.alpha_joint_)
+        return state
+
+    def load_state_dict(self, state: dict[str, np.ndarray]) -> None:
+        self.two_view.load_state_dict(state)
+        self.joint_anchor_ = np.asarray(state["teacher_joint_anchor"], dtype=np.float64)
+        self.alpha_joint_ = np.asarray(state["teacher_alpha_joint"], dtype=np.float64)

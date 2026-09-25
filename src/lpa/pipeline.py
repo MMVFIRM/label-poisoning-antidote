@@ -12,36 +12,59 @@ from ._checks import as_int_1d
 from ._version import __version__
 from .audit import build_targets, validate_trusted_pairs
 from .config import LPAConfig
-from .features import CIFARFeatureExtractor
-from .student import LandmarkRidgeStudent
-from .teacher import TrustedKernelTeacher
+from .features import CIFARFeatureExtractor, KMeansPatchFeatureExtractor
+from .student import LandmarkRidgeStudent, LinearRidgeStudent
+from .teacher import BlendedKernelTeacher, TrustedKernelTeacher
 
 
 class LabelPoisoningAntidote:
-    """Frozen LPA v1.0 training pipeline.
+    """LPA training pipeline.
 
     Core design rule: the training API does not accept an untrusted label field.
     Only `trusted_indices` and their corresponding `trusted_labels` enter fit().
+
+    The default architecture (`"kmeans"`, LPA 2.0) uses label-free k-means
+    patch features, a blended trusted-only kernel teacher, and a linear ridge
+    student. `LPAConfig.v1()` selects the frozen v1.0 landmark architecture,
+    which is bit-identical to LPA 1.0.0.
     """
 
-    FORMAT_VERSION = 2
+    FORMAT_VERSION = 3
 
     def __init__(self, config: LPAConfig | None = None) -> None:
         self.config = config or LPAConfig()
         self.feature_extractor = CIFARFeatureExtractor(self.config.feature)
-        self.teacher = TrustedKernelTeacher(self.config.n_classes, self.config.teacher)
-        self.student = LandmarkRidgeStudent(self.config.n_classes, self.config.student)
+        self.kmeans_extractor: KMeansPatchFeatureExtractor | None = None
+        self.teacher: TrustedKernelTeacher | BlendedKernelTeacher
+        self.student: LandmarkRidgeStudent | LinearRidgeStudent
+        if self.config.architecture == "kmeans":
+            self.kmeans_extractor = KMeansPatchFeatureExtractor(self.config.kmeans)
+            self.teacher = BlendedKernelTeacher(
+                self.config.n_classes, self.config.kmeans_teacher, self.config.teacher
+            )
+            self.student = LinearRidgeStudent(self.config.n_classes, self.config.linear_student)
+        else:
+            self.teacher = TrustedKernelTeacher(self.config.n_classes, self.config.teacher)
+            self.student = LandmarkRidgeStudent(self.config.n_classes, self.config.student)
         self.trusted_indices_: np.ndarray | None = None
         self.trusted_labels_: np.ndarray | None = None
         self.target_hash_: str | None = None
 
     @property
+    def architecture(self) -> str:
+        return self.config.architecture
+
+    @property
     def fitted(self) -> bool:
         return self.teacher.fitted and self.student.fitted
 
+    @property
+    def _chunk(self) -> int:
+        return self.student.config.chunk_size
+
     @staticmethod
     def _hash_array(a: np.ndarray) -> str:
-        return hashlib.sha256(np.ascontiguousarray(a).view(np.uint8)).hexdigest()
+        return hashlib.sha256(np.ascontiguousarray(a).tobytes()).hexdigest()
 
     def fit_views(
         self,
@@ -51,6 +74,12 @@ class LabelPoisoningAntidote:
         trusted_indices: np.ndarray,
         trusted_labels: np.ndarray,
     ) -> "LabelPoisoningAntidote":
+        """Fit from label-independent feature views.
+
+        `view_a` and `view_b` feed the two-view kernel teacher. `joint` is the
+        student representation; under the k-means architecture the teacher
+        also uses it. For images, `fit_images()` builds all three.
+        """
         a = np.asarray(view_a)
         b = np.asarray(view_b)
         z = np.asarray(joint)
@@ -66,12 +95,47 @@ class LabelPoisoningAntidote:
         )
         self.trusted_indices_ = idx.copy()
         self.trusted_labels_ = y.copy()
-        self.teacher.fit(a[idx], b[idx], y)
-        p = self.teacher.predict_proba(a, b, chunk_size=self.config.student.chunk_size)
-        q = build_targets(p, idx, y, self.config.n_classes)
-        self.target_hash_ = self._hash_array(q)
-        self.student.fit(z, q)
+        if isinstance(self.teacher, BlendedKernelTeacher):
+            assert isinstance(self.student, LinearRidgeStudent)
+            self.teacher.fit(a[idx], b[idx], z[idx], y)
+            p = self.teacher.predict_proba(a, b, z, chunk_size=self._chunk)
+            q = build_targets(p, idx, y, self.config.n_classes)
+            self.target_hash_ = self._hash_array(q)
+            self.student.fit(z, q, trusted_indices=idx)
+        else:
+            assert isinstance(self.student, LandmarkRidgeStudent)
+            self.teacher.fit(a[idx], b[idx], y)
+            p = self.teacher.predict_proba(a, b, chunk_size=self._chunk)
+            q = build_targets(p, idx, y, self.config.n_classes)
+            self.target_hash_ = self._hash_array(q)
+            self.student.fit(z, q)
         return self
+
+    def image_views(self, x: np.ndarray, fit: bool = False) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+        """Label-free (view_a, view_b, joint) for CIFAR-like images.
+
+        With `fit=True` the feature statistics (and, for the k-means
+        architecture, the patch dictionary) are learned from `x` first.
+        """
+        chunk = self._chunk
+        views = (
+            self.feature_extractor.fit_transform(x, chunk_size=chunk)
+            if fit
+            else self.feature_extractor.transform(x, chunk_size=chunk)
+        )
+        if self.kmeans_extractor is None:
+            return views.view_a, views.view_b, views.joint
+        joint = self.kmeans_extractor.fit_transform(x) if fit else self.kmeans_extractor.transform(x)
+        return views.view_a, views.view_b, joint
+
+    def _image_joint(self, x: np.ndarray) -> np.ndarray:
+        if self.kmeans_extractor is not None:
+            if not self.kmeans_extractor.fitted:
+                raise RuntimeError("Image feature extractor is not fitted.")
+            return self.kmeans_extractor.transform(x)
+        if not self.feature_extractor.fitted:
+            raise RuntimeError("Image feature extractor is not fitted.")
+        return self.feature_extractor.transform(x, chunk_size=self._chunk).joint
 
     def fit_images(
         self,
@@ -79,17 +143,9 @@ class LabelPoisoningAntidote:
         trusted_indices: np.ndarray,
         trusted_labels: np.ndarray,
     ) -> "LabelPoisoningAntidote":
-        views = self.feature_extractor.fit_transform(
-            x,
-            chunk_size=self.config.student.chunk_size,
-        )
-        return self.fit_views(
-            views.view_a,
-            views.view_b,
-            views.joint,
-            trusted_indices,
-            trusted_labels,
-        )
+        """Fit from CIFAR-like images: float in [0, 1] or integer 0-255 pixels."""
+        a, b, z = self.image_views(x, fit=True)
+        return self.fit_views(a, b, z, trusted_indices, trusted_labels)
 
     def predict_views(self, joint: np.ndarray) -> np.ndarray:
         return self.student.predict(joint)
@@ -98,17 +154,22 @@ class LabelPoisoningAntidote:
         return self.student.predict_scores(joint)
 
     def predict_images(self, x: np.ndarray) -> np.ndarray:
-        if not self.feature_extractor.fitted:
-            raise RuntimeError("Image feature extractor is not fitted.")
-        views = self.feature_extractor.transform(x, chunk_size=self.config.student.chunk_size)
-        return self.student.predict(views.joint)
+        return self.student.predict(self._image_joint(x))
 
-    def teacher_probabilities_views(self, view_a: np.ndarray, view_b: np.ndarray) -> np.ndarray:
-        return self.teacher.predict_proba(
-            view_a,
-            view_b,
-            chunk_size=self.config.student.chunk_size,
-        )
+    def predict_scores_images(self, x: np.ndarray) -> np.ndarray:
+        return self.student.predict_scores(self._image_joint(x))
+
+    def teacher_probabilities_views(
+        self,
+        view_a: np.ndarray,
+        view_b: np.ndarray,
+        joint: np.ndarray | None = None,
+    ) -> np.ndarray:
+        if isinstance(self.teacher, BlendedKernelTeacher):
+            if joint is None:
+                raise ValueError("The k-means architecture teacher also needs the joint features.")
+            return self.teacher.predict_proba(view_a, view_b, joint, chunk_size=self._chunk)
+        return self.teacher.predict_proba(view_a, view_b, chunk_size=self._chunk)
 
     def score_images(self, x: np.ndarray, labels: np.ndarray) -> float:
         y = as_int_1d(labels, "labels")
@@ -119,8 +180,8 @@ class LabelPoisoningAntidote:
 
         Every saved array is recorded in the metadata with a SHA-256 digest that
         `load()` verifies. The saved arrays include trusted-example features
-        (teacher anchors) and training-feature landmarks; treat the model
-        directory as containing training data. Pass
+        (teacher anchors) and, for the v1.0 architecture, training-feature
+        landmarks; treat the model directory as containing training data. Pass
         `include_trusted_labels=False` to omit trusted indices and labels,
         which are not needed for prediction.
         """
@@ -131,6 +192,8 @@ class LabelPoisoningAntidote:
         state: dict[str, Any] = {}
         if self.feature_extractor.fitted:
             state.update(self.feature_extractor.state_dict())
+        if self.kmeans_extractor is not None and self.kmeans_extractor.fitted:
+            state.update(self.kmeans_extractor.state_dict())
         state.update(self.teacher.state_dict())
         state.update(self.student.state_dict())
         if include_trusted_labels:
@@ -142,6 +205,7 @@ class LabelPoisoningAntidote:
         metadata = {
             "format_version": self.FORMAT_VERSION,
             "package_version": __version__,
+            "architecture": self.config.architecture,
             "config": self.config.to_dict(),
             "target_hash": self.target_hash_,
             "student_weight_hash": self.student.weight_hash(),
@@ -176,7 +240,7 @@ class LabelPoisoningAntidote:
             raise ValueError("Model fingerprint does not match the expected value.")
         metadata = json.loads((path / "metadata.json").read_text(encoding="utf-8"))
         format_version = int(metadata["format_version"])
-        if format_version not in (1, cls.FORMAT_VERSION):
+        if format_version not in (1, 2, cls.FORMAT_VERSION):
             raise ValueError(f"Unsupported model format version: {format_version}.")
         model = cls(LPAConfig.from_dict(metadata["config"]))
         with np.load(path / "model.npz", allow_pickle=False) as loaded:
@@ -198,6 +262,8 @@ class LabelPoisoningAntidote:
 
         if "feature_color_mean" in state:
             model.feature_extractor.load_state_dict(state)
+        if model.kmeans_extractor is not None and "kmeans_centroids" in state:
+            model.kmeans_extractor.load_state_dict(state)
         model.teacher.load_state_dict(state)
         model.student.load_state_dict(state)
         model.trusted_indices_ = state.get("trusted_indices")

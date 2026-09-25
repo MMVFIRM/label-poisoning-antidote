@@ -1,6 +1,6 @@
-# Research history: Gates 1-33
+# Research history: Gates 1-34
 
-This file records why the v1.0 release is smaller than the research tree.
+This file records why the released core is smaller than the research tree.
 
 | Gate | Main result |
 |---:|---|
@@ -39,9 +39,9 @@ This file records why the v1.0 release is smaller than the research tree.
 | 31 | Full 50k/10k centralized qualification passed; high-trust utility crossover documented. |
 | 32 | Full 50k/10k federated/non-IID qualification passed; final-student mutation invariance measured directly. |
 | 33 | External FairMean/FedAvg/q-FFL checkpoint confirmed robustness/utility tradeoff; full GPU matrix left optional. |
-| 34 | *Post-release research.* Label-free k-means patch features lifted the student by +11 to +15 pt, and it now beats its own teacher at every budget; self-training rejected. See [`GATE34_RESEARCH.md`](GATE34_RESEARCH.md). |
+| 34 | Label-free k-means patch features lifted the student by +11 to +15 pt, and it now beats its own teacher at every budget; self-training rejected. Adopted as the LPA 2.0 default. See [`GATE34_RESEARCH.md`](GATE34_RESEARCH.md). |
 
-## Removed from the v1.0 core
+## Removed from the core
 
 - VIVERE / MACSL / Ghost Manifold components;
 - geometric poison classification;
@@ -50,7 +50,8 @@ This file records why the v1.0 release is smaller than the research tree.
 - mandatory SCCS projection;
 - confidence filtering and sample weighting;
 - pseudo-target probability recalibration;
-- non-random landmark selection.
+- non-random landmark selection;
+- iterated self-training on student predictions (Gate 34).
 
 These exclusions are deliberate research conclusions, not missing implementation
 work.

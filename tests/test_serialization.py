@@ -79,7 +79,7 @@ def test_image_pipeline_round_trip(tmp_path):
     base=rng.random((classes,3,32,32),dtype=np.float32)
     x=np.clip(base[y]+.15*rng.normal(size=(n,3,32,32)).astype(np.float32),0,1)
     trusted=np.concatenate([np.flatnonzero(y==c)[:5] for c in range(classes)])
-    cfg=LPAConfig(n_classes=classes,student=StudentConfig(landmark_count=16))
+    cfg=LPAConfig.v1(n_classes=classes,student=StudentConfig(landmark_count=16))
     model=LabelPoisoningAntidote(cfg).fit_images(x,trusted,y[trusted])
     pred=model.predict_images(x)
     assert model.score_images(x,y)>.9

@@ -5,7 +5,7 @@ import numpy as np
 
 def as_finite_2d(values: np.ndarray, name: str, dtype: type = np.float64) -> np.ndarray:
     """Return `values` as a 2-D floating array, rejecting NaN and infinity."""
-    arr = np.asarray(values, dtype=dtype)
+    arr: np.ndarray = np.asarray(values, dtype=dtype)
     if arr.ndim != 2:
         raise ValueError(f"{name} must be a 2-D array.")
     if not np.isfinite(arr).all():

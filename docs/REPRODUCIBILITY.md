@@ -45,6 +45,30 @@ python experiments/reference/gate32_full_federated_harness.py \
   --output gate32_reproduction.csv
 ```
 
+## Gate 34 full CIFAR (LPA 2.0 default)
+
+Reuses the Gate-31 feature cache and builds the k-means feature cache on its
+first run (about 7 minutes on 4 cores; the cache is about 1.5 GB):
+
+```bash
+python experiments/reference/gate34_full_cifar_harness.py \
+  --data-dir ./cifar-10-batches-bin \
+  --gate31-cache gate31_features.npz \
+  --kmeans-cache gate34_kmeans_1600.npz \
+  --output gate34_reproduction.csv
+python experiments/reference/gate34_summarize.py gate34_reproduction.csv
+```
+
+The summarizer also checks the run's recomputed v1.0 columns against
+`benchmarks/results/gate31_full_results.csv`.
+
+To confirm that the installed `lpa` package reproduces the harness through its
+public API:
+
+```bash
+python experiments/reference/gate34_library_check.py --data-dir ./cifar-10-batches-bin
+```
+
 ## External baseline sanity
 
 The default external script is deliberately one seed because the full CNN
@@ -59,6 +83,6 @@ The original 30-run matrix remains available as
 
 ## Result provenance
 
-The exact successful Gate-31 and Gate-32 uploaded CSVs are preserved under
+The exact successful Gate-31, Gate-32, and Gate-34 CSVs are preserved under
 `benchmarks/results/`. SHA-256 hashes are recorded in `MANIFEST.json` at the
 repository root when the release archive is built.

@@ -28,7 +28,7 @@ Hyperparameters were chosen on a 5,000-example dev split held out of the
 50,000-example training set (seeds 31001-31003), never on the test set.
 
 Usage:
-  python gate34_kmeans_harness.py --data-dir ./cifar-10-batches-bin \
+  python gate34_full_cifar_harness.py --data-dir ./cifar-10-batches-bin \
       --gate31-cache ./gate31_features.npz --kmeans-cache ./gate34_kmeans_1600.npz
 
 Requires numpy and scipy only.

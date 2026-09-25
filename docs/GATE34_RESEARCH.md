@@ -1,8 +1,9 @@
-# Gate 34 — stronger label-free features (research candidate)
+# Gate 34 — stronger label-free features
 
-Status: **research result, not the frozen v1.0 architecture.** Library
-defaults, `LPAConfig`, and every v1.0 claim are unchanged. Gate 34 asks whether
-the v1.0 design can be improved without weakening its central property.
+Status: **adopted as the LPA 2.0 default architecture** (`architecture="kmeans"`).
+The frozen v1.0 architecture remains available as `LPAConfig.v1()`, and every
+v1.0 claim still applies to it. Gate 34 asked whether the v1.0 design could be
+improved without weakening its central property.
 
 ## Summary
 
@@ -73,7 +74,7 @@ exactly once, for the locked configuration below.
 
 50,000 train / 10,000 official test, Gate-31 trusted seeds 31001–31005, five
 seeds per budget. Produced by
-[`experiments/research/gate34_kmeans_harness.py`](../experiments/research/gate34_kmeans_harness.py);
+[`experiments/reference/gate34_full_cifar_harness.py`](../experiments/reference/gate34_full_cifar_harness.py);
 raw rows in `benchmarks/results/gate34_results.csv`, summary in
 `benchmarks/results/gate34_summary.csv`.
 
@@ -144,9 +145,14 @@ Tested on the dev split and rejected:
   label field only. Poisoned *images* can influence the label-free dictionary
   and standardization, as they already influenced the v1.0 color statistics and
   landmarks. This round did not measure that.
-- **Not yet in the library.** The Gate-34 path lives in the research harness
-  only. Adding it to `lpa` would be a new, opt-in configuration so that v1.0
-  models stay bit-identical.
+- **Library integration.** LPA 2.0 implements this path as the default
+  `LabelPoisoningAntidote()` (`KMeansPatchFeatureExtractor`,
+  `BlendedKernelTeacher`, `LinearRidgeStudent`). `LPAConfig.v1()` stays
+  bit-identical to 1.0.0, and model files saved by 1.0.0 load unchanged.
+  `experiments/reference/gate34_library_check.py` runs all 20 conditions
+  through the public API of the installed 2.0.0 package. Student and teacher
+  test accuracy match this harness exactly in 20 of 20 conditions
+  (`benchmarks/results/gate34_library_check.csv`).
 
 ## Reproduce
 
@@ -156,10 +162,13 @@ python experiments/reference/gate31_full_cifar_harness.py \
   --data-dir ./cifar-10-batches-bin --feature-cache ./gate31_features.npz
 
 # 2. Gate 34 (builds and caches k-means features on first run)
-python experiments/research/gate34_kmeans_harness.py \
+python experiments/reference/gate34_full_cifar_harness.py \
   --data-dir ./cifar-10-batches-bin --gate31-cache ./gate31_features.npz \
   --kmeans-cache ./gate34_kmeans_1600.npz --output gate34_results.csv
 
 # 3. Summary + cross-check against bundled Gate 31
-python experiments/research/gate34_summarize.py gate34_results.csv
+python experiments/reference/gate34_summarize.py gate34_results.csv
+
+# 4. The installed library through its public API
+python experiments/reference/gate34_library_check.py --data-dir ./cifar-10-batches-bin
 ```

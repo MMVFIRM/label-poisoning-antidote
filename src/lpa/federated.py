@@ -15,12 +15,27 @@ class RidgeSufficientStatistics:
     n_examples: int
 
 
-def client_sufficient_statistics(phi: np.ndarray, targets: np.ndarray) -> RidgeSufficientStatistics:
+def client_sufficient_statistics(
+    phi: np.ndarray,
+    targets: np.ndarray,
+    weights: np.ndarray | None = None,
+) -> RidgeSufficientStatistics:
+    """A_i = Phi^T diag(w) Phi and B_i = Phi^T diag(w) Q for one client.
+
+    `weights` are per-row ridge weights (for example `trusted_row_weights`);
+    omit them for the unweighted v1.0 student.
+    """
     x = as_finite_2d(phi, "phi")
     q = as_finite_2d(targets, "targets")
     if len(x) != len(q):
         raise ValueError("phi and targets must be equal-length 2-D arrays.")
-    return RidgeSufficientStatistics(a=x.T @ x, b=x.T @ q, n_examples=len(x))
+    if weights is None:
+        return RidgeSufficientStatistics(a=x.T @ x, b=x.T @ q, n_examples=len(x))
+    w = np.asarray(weights, dtype=np.float64)
+    if w.shape != (len(x),) or not np.isfinite(w).all() or (w <= 0).any():
+        raise ValueError("weights must be one positive finite value per row.")
+    xw = x * w[:, None]
+    return RidgeSufficientStatistics(a=xw.T @ x, b=xw.T @ q, n_examples=len(x))
 
 
 def aggregate_sufficient_statistics(
@@ -48,9 +63,14 @@ def aggregate_sufficient_statistics(
     return cho_solve(cf, rhs, check_finite=False)
 
 
-def centralized_ridge(phi: np.ndarray, targets: np.ndarray, ridge: float) -> np.ndarray:
+def centralized_ridge(
+    phi: np.ndarray,
+    targets: np.ndarray,
+    ridge: float,
+    weights: np.ndarray | None = None,
+) -> np.ndarray:
     return aggregate_sufficient_statistics(
-        [client_sufficient_statistics(phi, targets)],
+        [client_sufficient_statistics(phi, targets, weights)],
         ridge=ridge,
     )
 
@@ -60,12 +80,16 @@ def federated_equivalence_audit(
     targets: np.ndarray,
     partitions: list[np.ndarray],
     ridge: float,
+    weights: np.ndarray | None = None,
 ) -> float:
     """Return max |W_federated - W_centralized|."""
     x = np.asarray(phi)
     q = np.asarray(targets)
-    central = centralized_ridge(x, q, ridge)
-    stats = [client_sufficient_statistics(x[idx], q[idx]) for idx in partitions]
+    central = centralized_ridge(x, q, ridge, weights)
+    stats = [
+        client_sufficient_statistics(x[idx], q[idx], None if weights is None else np.asarray(weights)[idx])
+        for idx in partitions
+    ]
     federated = aggregate_sufficient_statistics(stats, ridge)
     return float(np.max(np.abs(federated - central)))
 

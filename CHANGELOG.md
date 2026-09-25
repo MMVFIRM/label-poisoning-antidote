@@ -1,16 +1,54 @@
 # Changelog
 
-## Unreleased
+## 2.0.0 — 2026-09-25
 
-### Research
+LPA 2.0 makes the Gate-34 design the default. On full CIFAR-10 the default
+student reaches 49.6% / 55.9% / 61.4% / 66.4% at 0.5% / 1% / 2% / 5% trusted
+labels (1.0.0: 38.6% / 44.1% / 47.6% / 51.5%). It beats its own trusted-only
+teacher at every budget, and untrusted-label invariance is unchanged.
 
-- Gate 34: label-free Coates & Ng k-means patch features plus a linear ridge
-  student. On full CIFAR-10 the student reaches 49.6% / 55.9% / 61.4% / 66.4%
-  at 0.5% / 1% / 2% / 5% trusted labels (v1.0: 38.6% / 44.1% / 47.6% / 51.5%).
-  It beats its own trusted-only teacher at every budget, and target and
-  final-weight sentinel differences stay zero. Harness in
-  `experiments/research/`, results in `benchmarks/results/gate34_*`, write-up
-  in `docs/GATE34_RESEARCH.md`. Library defaults are unchanged.
+### Breaking
+
+- `LabelPoisoningAntidote()` and `LPAConfig()` now use
+  `architecture="kmeans"`. New default models differ from 1.0.0 models: they
+  have different features, parameters, predictions, and model files. Use
+  `LPAConfig.v1()` for the 1.0.0 architecture, which is bit-identical.
+- `mutation_invariance_audit(..., student_config=None)` now audits the 2.0
+  linear student. Pass a `StudentConfig` to audit the v1.0 landmark student.
+- `lpa audit` reports both architectures in one JSON object
+  (`{"kmeans": ..., "landmark": ..., "passed": ...}`).
+- Model format 3 adds `architecture` to `metadata.json`.
+
+### Added
+
+- `KMeansPatchFeatureExtractor`: label-free Coates & Ng k-means patch features
+  (1600 centroids, 6400-D), threaded encoding.
+- `BlendedKernelTeacher`: trusted-only blend of a joint-feature RBF kernel ridge
+  and the v1.0 two-view teacher.
+- `LinearRidgeStudent` with trusted-row weighting, and `trusted_row_weights()`.
+- Configs: `KMeansFeatureConfig`, `KMeansTeacherConfig`, `LinearStudentConfig`,
+  `LPAConfig.architecture`, `LPAConfig.v1()`.
+- `LabelPoisoningAntidote.image_views()`, `predict_scores_images()`, and an
+  optional `joint` argument to `teacher_probabilities_views()`.
+- Integer (0-255) image input is accepted alongside floats in [0, 1].
+- Weighted federated statistics: `client_sufficient_statistics(..., weights=)`,
+  and `weights=` on `centralized_ridge` and `federated_equivalence_audit`.
+- `lpa federated-audit` also checks the trusted-weighted form.
+- Gate-34 full-scale harness, summarizer, and library check in
+  `experiments/reference/`, with results in `benchmarks/results/gate34_*`.
+- Tests: the 2.0 pipeline, feature determinism, the weighted student,
+  federated equivalence, tamper evidence, and 1.0.0 model-file compatibility
+  (40 tests).
+
+### Fixed
+
+- mypy errors under recent NumPy type stubs (hashing used ndarray views).
+  Hash values are unchanged.
+
+### Compatibility
+
+- Format-2 model files written by 1.0.0 load as the v1.0 architecture and
+  predict identically (checked against fixtures written by 1.0.0).
 
 ## 1.0.0 — 2026-09-25
 
